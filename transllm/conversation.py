@@ -376,7 +376,6 @@ conv_traffic_expert = Conversation(
            "and time information.",
     roles=("Human", "TrafficExpert"),
     messages=(
-        # 示例1：单次查询
         ("Human", 
          "What will be the traffic flow at Beijing West Second Ring Road from 14:00 to 16:00 today?"),
         ("TrafficExpert",
@@ -386,7 +385,6 @@ conv_traffic_expert = Conversation(
          "3. **Factors**: No major events or construction nearby.\n"
          "Recommendation: Travel time may increase by 10-15% during peak hours."),
         
-        # 示例2：多条件查询
         ("Human", 
          "Will there be congestion near Shanghai Hongqiao Airport between 7:00-9:00 AM tomorrow? "
          "Also, what about the impact of a road closure on Jiangnan Avenue?"),
@@ -398,7 +396,6 @@ conv_traffic_expert = Conversation(
          "   - Diversion route: North Jiangning Road will experience 30% higher flow.\n"
          "   - Expected delay: 20-25 minutes for southbound traffic."),
         
-        # 示例3：历史数据分析请求
         ("Human", 
          "What was the traffic flow comparison between Chang'an Avenue and Yan'an Road during last week's rainy days?"),
         ("TrafficExpert",

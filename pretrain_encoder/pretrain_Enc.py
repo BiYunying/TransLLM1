@@ -1,5 +1,4 @@
 import os
-# 设置CUDA设备为单卡
 os.environ["CUDA_VISIBLE_DEVICES"] = "4"
 import argparse
 import numpy as np
@@ -80,13 +79,11 @@ def compute_pair(i, j, data_mean):
 def compute_distance_matrix(data_mean, node_num, n_jobs=8):
     dist_matrix = np.zeros((node_num, node_num))
 
-    # 并行计算上三角
     results = Parallel(n_jobs=n_jobs)(
         delayed(compute_pair)(i, j, data_mean)
         for i in range(node_num) for j in range(i, node_num)
     )
 
-    # 填充对称矩阵
     for i, j, dist in results:
         dist_matrix[i][j] = dist
         dist_matrix[j][i] = dist
@@ -169,31 +166,25 @@ def construct_se_matrix(data_path, args):
 def read_node_information(args):
     file_path = args.node_information_path1
     df = pd.read_csv(file_path)
-    selected_cols = ["Fwy", "Lanes", "Direction"]  # 筛选目标列
+    selected_cols = ["Fwy", "Lanes", "Direction"]  
     df = df[selected_cols].copy()
     df["Fwy_main"] = df["Fwy"].str.split("-").str[0]
-    # ---------------------- 2. 特征编码 ----------------------
-    # 2.1 道路类型（Fwy）：独热编码
-    encoder_fwy = OneHotEncoder(sparse_output=False, handle_unknown="ignore")
-    fwy_encoded = encoder_fwy.fit_transform(df[["Fwy_main"]])  # 形状：(N, 类别数)
 
-    # # 2.2 车道数（Lanes）：数值标准化
+    encoder_fwy = OneHotEncoder(sparse_output=False, handle_unknown="ignore")
+    fwy_encoded = encoder_fwy.fit_transform(df[["Fwy_main"]])  
+
     # scaler_lanes = StandardScaler()
-    # lanes_scaled = scaler_lanes.fit_transform(df[["Lanes"]])  # 形状：(N, 1)
+    # lanes_scaled = scaler_lanes.fit_transform(df[["Lanes"]])  
     lanes_raw = df[["Lanes"]].values.astype(int)
     valid_directions = ["N", "S", "W", "E"]
 
-    # 创建编码器（自动忽略未知方向）
     encoder_direction = OneHotEncoder(
         categories=[valid_directions],
         sparse_output=False,
         handle_unknown="ignore"
     )
-
-    # 执行编码
     direction_encoded = encoder_direction.fit_transform(df[["Direction"]])
 
-    # 将编码后的特征水平拼接
     final_features = np.hstack([fwy_encoded, lanes_raw, direction_encoded])
     return final_features
 
@@ -201,24 +192,22 @@ def read_node_information2(args):
     file_path = args.node_information_path2
     df = pd.read_csv(file_path)
     
-    selected_cols = ["count", "fast_count", "slow_count"]  # 筛选目标列
+    selected_cols = ["count", "fast_count", "slow_count"] 
     df = df[selected_cols].copy()
     scaler = StandardScaler()
     scaled_features = scaler.fit_transform(df.values)  # shape: [N, 3]
 
-    # 转为 NumPy 数组返回
     final_features = np.hstack([scaled_features])
     return final_features
 def read_node_information4(args):
     file_path = args.node_information_path4
     df = pd.read_csv(file_path)
     
-    selected_cols = ["charge_count"]  # 筛选目标列
+    selected_cols = ["charge_count"] 
     df = df[selected_cols].copy()
     scaler = StandardScaler()
     scaled_features = scaler.fit_transform(df.values)  # shape: [N, 3]
 
-    # 转为 NumPy 数组返回
     final_features = np.hstack([scaled_features])
     return final_features
 def normalize_adj_mx(adj_mx):
@@ -238,7 +227,7 @@ def load_adj(args):
     adj_mx = load_adj_from_numpy(adj_path)
     adj_mx = adj_mx - np.eye(node_num)
     sp_matrix = adj_mx + np.transpose(adj_mx)
-    rows, cols = np.where(sp_matrix)  # 提取非零元素的行列索引
+    rows, cols = np.where(sp_matrix) 
     sp_matrix = torch.tensor([rows, cols], dtype=torch.long).to(args.device)
     batch_offsets = torch.arange(args.bs, device=args.device) * node_num
     sp_matrix = sp_matrix.unsqueeze(2) + batch_offsets.view(1, 1, -1)
@@ -249,14 +238,14 @@ def load_adj(args):
     nodes_feature2 = torch.from_numpy(nodes_feature2).float().to(args.device)
     # se_matrix = construct_se_matrix(data_path, args)
     se_matrix =np.load(os.path.join(data_path, "cached_dist_matrix.npy"))
-    rows, cols = np.where(se_matrix)  # 提取非零元素的行列索引
+    rows, cols = np.where(se_matrix)  
     se_matrix = torch.tensor([rows, cols], dtype=torch.long).to(args.device)
     se_matrix = se_matrix.unsqueeze(2) + batch_offsets.view(1, 1, -1)
     se_matrix = se_matrix.reshape(2,-1)
 
     data_path2, adj_path2, node_num2 = get_dataset_info(args.dataset2)
     sp_matrix2 = load_adj_from_numpy(adj_path2)
-    rows, cols = np.where(sp_matrix2)  # 提取非零元素的行列索引
+    rows, cols = np.where(sp_matrix2) 
     sp_matrix2 = torch.tensor([rows, cols], dtype=torch.long).to(args.device)
     batch_offsets = torch.arange(args.bs, device=args.device) * node_num2
     sp_matrix2 = sp_matrix2.unsqueeze(2) + batch_offsets.view(1, 1, -1)
@@ -264,14 +253,14 @@ def load_adj(args):
 
     # se_matrix2 = construct_se_matrix(data_path2, args)
     se_matrix2 =np.load(os.path.join(data_path2, "cached_dist_matrix.npy"))
-    rows, cols = np.where(se_matrix2)  # 提取非零元素的行列索引
+    rows, cols = np.where(se_matrix2) 
     se_matrix2 = torch.tensor([rows, cols], dtype=torch.long).to(args.device)
     se_matrix2 = se_matrix2.unsqueeze(2) + batch_offsets.view(1, 1, -1)
     se_matrix2 = se_matrix2.reshape(2,-1)
 
     data_path3, adj_path3, node_num3 = get_dataset_info(args.dataset3)
     sp_matrix3 = load_adj_from_numpy(adj_path3)
-    rows, cols = np.where(sp_matrix3)  # 提取非零元素的行列索引
+    rows, cols = np.where(sp_matrix3) 
     sp_matrix3 = torch.tensor([rows, cols], dtype=torch.long).to(args.device)
     batch_offsets = torch.arange(args.bs, device=args.device) * node_num3
     sp_matrix3 = sp_matrix3.unsqueeze(2) + batch_offsets.view(1, 1, -1)
@@ -279,13 +268,13 @@ def load_adj(args):
 
     # se_matrix3 = construct_se_matrix(data_path3, args)
     se_matrix3 =np.load(os.path.join(data_path3, "cached_demand_matrix.npy"))
-    rows, cols = np.where(se_matrix3)  # 提取非零元素的行列索引
+    rows, cols = np.where(se_matrix3) 
     se_matrix3 = torch.tensor([rows, cols], dtype=torch.long).to(args.device)
     se_matrix3 = se_matrix3.unsqueeze(2) + batch_offsets.view(1, 1, -1)
     se_matrix3 = se_matrix3.reshape(2,-1)
 
     se_matrix3_2 =np.load(os.path.join(data_path3, "cached_waiting_matrix.npy"))
-    rows, cols = np.where(se_matrix3_2)  # 提取非零元素的行列索引
+    rows, cols = np.where(se_matrix3_2) 
     se_matrix3_2 = torch.tensor([rows, cols], dtype=torch.long).to(args.device)
     se_matrix3_2 = se_matrix3_2.unsqueeze(2) + batch_offsets.view(1, 1, -1)
     se_matrix3_2 = se_matrix3_2.reshape(2,-1)
@@ -294,7 +283,7 @@ def load_adj(args):
     nodes_feature4 = torch.from_numpy(nodes_feature4).float().to(args.device)
     data_path4, adj_path4, node_num4 = get_dataset_info(args.dataset4)
     sp_matrix4 = load_adj_from_numpy(adj_path4)
-    rows, cols = np.where(sp_matrix4)  # 提取非零元素的行列索引
+    rows, cols = np.where(sp_matrix4) 
     sp_matrix4 = torch.tensor([rows, cols], dtype=torch.long).to(args.device)
     batch_offsets = torch.arange(args.bs, device=args.device) * node_num4
     sp_matrix4 = sp_matrix4.unsqueeze(2) + batch_offsets.view(1, 1, -1)
@@ -302,14 +291,14 @@ def load_adj(args):
 
     # se_matrix4 = construct_se_matrix(data_path4, args)
     se_matrix4 =np.load(os.path.join(data_path4, "cached_dist_matrix.npy"))
-    rows, cols = np.where(se_matrix4)  # 提取非零元素的行列索引
+    rows, cols = np.where(se_matrix4)  
     se_matrix4 = torch.tensor([rows, cols], dtype=torch.long).to(args.device)
     se_matrix4 = se_matrix4.unsqueeze(2) + batch_offsets.view(1, 1, -1)
     se_matrix4 = se_matrix4.reshape(2,-1)
 
     data_path5, adj_path5, node_num5 = get_dataset_info(args.dataset5)
     sp_matrix5 = load_adj_from_numpy(adj_path5)
-    rows, cols = np.where(sp_matrix5)  # 提取非零元素的行列索引
+    rows, cols = np.where(sp_matrix5)  
     sp_matrix5 = torch.tensor([rows, cols], dtype=torch.long).to(args.device)
     batch_offsets = torch.arange(args.bs, device=args.device) * node_num5
     sp_matrix5 = sp_matrix5.unsqueeze(2) + batch_offsets.view(1, 1, -1)
@@ -317,7 +306,7 @@ def load_adj(args):
 
     # se_matrix5 = construct_se_matrix(data_path5, args)
     se_matrix5 =np.load(os.path.join(data_path5, "cached_dist_matrix.npy"))
-    rows, cols = np.where(se_matrix5)  # 提取非零元素的行列索引
+    rows, cols = np.where(se_matrix5) 
     se_matrix5 = torch.tensor([rows, cols], dtype=torch.long).to(args.device)
     se_matrix5 = se_matrix5.unsqueeze(2) + batch_offsets.view(1, 1, -1)
     se_matrix5 = se_matrix5.reshape(2,-1)
@@ -345,12 +334,7 @@ def main():
                    hidden_dim=args.hidden_dim,
                    time_stride=args.time_stride
                    )
-    # model_path = os.path.join('./pretrain_encoder/experiments/localgat_3dataset_new/3dataset/final_model_s2023.pt')
-    # if os.path.exists(model_path):
-    #     print(f"找到预训练模型: {model_path}")
-    #     # 加载模型参数
-    #     model.load_state_dict(torch.load(model_path, map_location=args.device))
-    #     print("模型加载成功!")
+
 
     model.to(args.device)
     loss_fn = masked_mae

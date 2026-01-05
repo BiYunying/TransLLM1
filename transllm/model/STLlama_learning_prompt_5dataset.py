@@ -599,12 +599,10 @@ class STLlamaForCausalLM(LlamaForCausalLM):
         traffic_match = re.search(r"traffic flow values are \[([^\]]+)\]", original_sentence)
         traffic_values = traffic_match.group(1).strip() if traffic_match else "unknown"
 
-        # 提取历史时间，不包含 'with ...'
         history_time_match = re.search(
             r"The recording time of the historical data is '([^']*?)(?= with data points recorded)", original_sentence)
         history_time = history_time_match.group(1).strip().rstrip(',') if history_time_match else "unknown"
 
-        # 提取未来时间段
         future_time_match = re.search(
             r"the next \d+ time steps during the time period of '([^']*?)(?= with data points recorded)", original_sentence)
         future_time = future_time_match.group(1).strip().rstrip(',') if future_time_match else "unknown"
