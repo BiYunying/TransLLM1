@@ -58,7 +58,7 @@ pip install -r requirements.txt
 
 You can use the code in [instruction_generate.py](./instruction_generate/instruction_generate.py) and [instruction_generate_dispatch.py](./instruction_generate/instruction_dispatch.py) to generate the specific instructions you need. For example: 
 
-```
+```shell
 -dataset_name: Choose the dataset. # PEMS08(for training)    PEMS03 (for testing)
 # Only one of the following options can be set to True
 -for_zeroshot: for zero-shot test or not.
